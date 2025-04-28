@@ -1,10 +1,10 @@
 import joblib
 
-from anomaly_detection.models import random_forest
+from anomaly_detection.models import ml_models
 
 def main():
     print("Starting the random forest module from main.py...")
-    random_forest.main()
+    ml_models.main()
 
     #model = joblib.load("./models/random_forest_model.pkl")
 
