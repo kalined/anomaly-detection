@@ -1,8 +1,8 @@
 import os
-import pandas as pd
-import numpy as np
 from datetime import timedelta
-import matplotlib.pyplot as plt
+
+import numpy as np
+import pandas as pd
 
 np.random.seed(17)
 
@@ -15,8 +15,9 @@ files = [
     "Load Average-data-as-joinbyfield-2025-04-06 13_47_48.csv",
     "Memory Utilization-data-2025-04-06 13_48_28.csv",
     "Network I_O-data-as-joinbyfield-2025-04-06 13_50_53.csv",
-    "Network Traffic-data-as-joinbyfield-2025-04-06 13_50_17.csv"
+    "Network Traffic-data-as-joinbyfield-2025-04-06 13_50_17.csv",
 ]
+
 
 def merge_csv_files(file_list):
     dataframes = []
@@ -35,8 +36,10 @@ def merge_csv_files(file_list):
         merged_df["Label"].fillna("normal", inplace=True)
     return merged_df
 
+
 # sujungiame duoemnis
 merged_df = merge_csv_files(files)
+
 
 def set_label_for_interval(df, start_str, end_str, label):
     start = pd.to_datetime(start_str)
@@ -45,12 +48,26 @@ def set_label_for_interval(df, start_str, end_str, label):
     df.loc[mask, "Label"] = label
     return df
 
-merged_df = set_label_for_interval(merged_df, "2025-04-03 20:53:00", "2025-04-03 20:56:00", "ddos")
-merged_df = set_label_for_interval(merged_df, "2025-04-03 20:58:00", "2025-04-03 21:04:00", "ddos")
-merged_df = set_label_for_interval(merged_df, "2025-04-03 21:16:00", "2025-04-03 21:41:00", "ddos")
-merged_df = set_label_for_interval(merged_df, "2025-04-04 15:25:00", "2025-04-04 15:40:00", "ddos")
-merged_df = set_label_for_interval(merged_df, "2025-04-04 16:22:00", "2025-04-04 16:24:00", "cpu_load_anomaly")
-merged_df = set_label_for_interval(merged_df, "2025-04-04 16:26:00", "2025-04-04 16:31:00", "cpu_load_anomaly")
+
+merged_df = set_label_for_interval(
+    merged_df, "2025-04-03 20:53:00", "2025-04-03 20:56:00", "ddos"
+)
+merged_df = set_label_for_interval(
+    merged_df, "2025-04-03 20:58:00", "2025-04-03 21:04:00", "ddos"
+)
+merged_df = set_label_for_interval(
+    merged_df, "2025-04-03 21:16:00", "2025-04-03 21:41:00", "ddos"
+)
+merged_df = set_label_for_interval(
+    merged_df, "2025-04-04 15:25:00", "2025-04-04 15:40:00", "ddos"
+)
+merged_df = set_label_for_interval(
+    merged_df, "2025-04-04 16:22:00", "2025-04-04 16:24:00", "cpu_load_anomaly"
+)
+merged_df = set_label_for_interval(
+    merged_df, "2025-04-04 16:26:00", "2025-04-04 16:31:00", "cpu_load_anomaly"
+)
+
 
 # Generuoja retus, labai didelius "Read (Disk I/O)" outlier'us
 def generate_read_disk(n):
@@ -62,41 +79,55 @@ def generate_read_disk(n):
     base_values[outlier_indices] = np.random.uniform(1e7, 1.5e7, num_outliers)
     return base_values
 
+
 def generate_synthetic_data_stable(start_date, end_date, freq="5T"):
     date_range = pd.date_range(start=start_date, end=end_date, freq=freq)
     n = len(date_range)
     hours = date_range.hour
 
     # Aukstesni vidurkiai darbo laiku ir zemesni ne darbo laiku
-    cpu_mean = np.where((hours >= 8) & (hours < 19), 0.40, 0.04)  # darbo laikas: 10%, ne darbo: 4%
-    mem_mean = np.where((hours >= 8) & (hours < 19), 0.50, 0.06)  # RAM: 10% darbo, 6% ne darbo
-    load_mean = np.where((hours >= 8) & (hours < 19), 5.0, 0.6)    # sis apkrova: aukstesne darbo metu
+    cpu_mean = np.where(
+        (hours >= 8) & (hours < 19), 0.40, 0.04
+    )  # darbo laikas: 10%, ne darbo: 4%
+    mem_mean = np.where(
+        (hours >= 8) & (hours < 19), 0.50, 0.06
+    )  # RAM: 10% darbo, 6% ne darbo
+    load_mean = np.where(
+        (hours >= 8) & (hours < 19), 5.0, 0.6
+    )  # sis apkrova: aukstesne darbo metu
     write_mean = np.where((hours >= 8) & (hours < 19), 500000, 410000)
-    #disk_utilization_mean = np.where((hours >= 8) & (hours < 19), 0.030, 0.0020)
+    # disk_utilization_mean = np.where((hours >= 8) & (hours < 19), 0.030, 0.0020)
     net_transmit_mean = np.where((hours >= 8) & (hours < 19), 70000, 55000)
     net_receive_mean = np.where((hours >= 8) & (hours < 19), 11000, 8500)
-    
-    synthetic = pd.DataFrame({
-        "Time": date_range,
-        "CPU Utilization": np.random.normal(cpu_mean, 0.005, n).clip(0, 1),
-        "Memory Utilization": np.random.normal(mem_mean, 0.005, n).clip(0, 1),
-        "Load[5m]": np.random.normal(load_mean, 0.1, n).clip(0),
-        "Load[1m]": np.random.normal(load_mean * 1.1, 0.1, n).clip(0),
-        "Load[15m]": np.random.normal(load_mean * 0.95, 0.1, n).clip(0),
-        "Write (Disk I/O)": np.random.normal(write_mean, 10000, n).clip(0),
-        #"Disk Utilization": np.random.normal(disk_utilization_mean, 0.025, n).clip(0, 1),
-        "Disk Utilization": np.random.normal(0.035, 0.025, n).clip(0, 1).round(4),
-        "Transmit Total (Network I/O)": np.random.normal(net_transmit_mean, 3000, n).clip(0),
-        "Receive Total (Network I/O)": np.random.normal(net_receive_mean, 800, n).clip(0),
-        "Read (Disk I/O)": generate_read_disk(n),
-        "Receive Errors (Network Traffic)": np.random.poisson(0.1, n).clip(0),
-        "Receive Total (Network Traffic)": np.random.normal(67.5, 57.5, n).clip(0),
-        "Transmit Errors (Network Traffic)": np.random.poisson(0.1, n).clip(0),
-        "Receive Dropped (Network Traffic)": np.random.poisson(0.05, n).clip(0),
-        "Transmit Dropped (Network Traffic)": np.random.poisson(0.05, n).clip(0),
-        "Transmit Total (Network Traffic)": np.random.normal(70, 55, n).clip(0),
-        "Label": "normal"
-    })
+
+    synthetic = pd.DataFrame(
+        {
+            "Time": date_range,
+            "CPU Utilization": np.random.normal(cpu_mean, 0.005, n).clip(0, 1),
+            "Memory Utilization": np.random.normal(mem_mean, 0.005, n).clip(0, 1),
+            "Load[5m]": np.random.normal(load_mean, 0.1, n).clip(0),
+            "Load[1m]": np.random.normal(load_mean * 1.1, 0.1, n).clip(0),
+            "Load[15m]": np.random.normal(load_mean * 0.95, 0.1, n).clip(0),
+            "Write (Disk I/O)": np.random.normal(write_mean, 10000, n).clip(0),
+            # "Disk Utilization":
+            # np.random.normal(disk_utilization_mean, 0.025, n).clip(0, 1),
+            "Disk Utilization": np.random.normal(0.035, 0.025, n).clip(0, 1).round(4),
+            "Transmit Total (Network I/O)": np.random.normal(
+                net_transmit_mean, 3000, n
+            ).clip(0),
+            "Receive Total (Network I/O)": np.random.normal(
+                net_receive_mean, 800, n
+            ).clip(0),
+            "Read (Disk I/O)": generate_read_disk(n),
+            "Receive Errors (Network Traffic)": np.random.poisson(0.1, n).clip(0),
+            "Receive Total (Network Traffic)": np.random.normal(67.5, 57.5, n).clip(0),
+            "Transmit Errors (Network Traffic)": np.random.poisson(0.1, n).clip(0),
+            "Receive Dropped (Network Traffic)": np.random.poisson(0.05, n).clip(0),
+            "Transmit Dropped (Network Traffic)": np.random.poisson(0.05, n).clip(0),
+            "Transmit Total (Network Traffic)": np.random.normal(70, 55, n).clip(0),
+            "Label": "normal",
+        }
+    )
     return synthetic
 
 
@@ -105,44 +136,65 @@ start_synth = merged_df["Time"].max() + timedelta(minutes=5)
 end_synth = pd.to_datetime("2025-05-31 23:59:59")
 synthetic_df = generate_synthetic_data_stable(start_synth, end_synth, freq="5T")
 
+
 # Funkcija iterpti papildomas anomalijas sintetineje dalyje
 def inject_random_anomalies(df):
     df = df.copy()
     n = len(df)
-    
+
     # DDoS anomalija: padidinti tinklo I/O rodiklius
     ddos_mask = np.random.random(n) < 0.15
     if ddos_mask.any():
-        df.loc[ddos_mask, "Transmit Total (Network I/O)"] *= np.random.uniform(5, 10, ddos_mask.sum())
-        df.loc[ddos_mask, "Receive Total (Network I/O)"] *= np.random.uniform(5, 10, ddos_mask.sum())
+        df.loc[ddos_mask, "Transmit Total (Network I/O)"] *= np.random.uniform(
+            5, 10, ddos_mask.sum()
+        )
+        df.loc[ddos_mask, "Receive Total (Network I/O)"] *= np.random.uniform(
+            5, 10, ddos_mask.sum()
+        )
         df.loc[ddos_mask, "Label"] = "ddos"
-    
+
     # CPU apkrovos anomalija
     cpu_mask = np.random.random(n) < 0.12
     if cpu_mask.any():
-        df.loc[cpu_mask, "CPU Utilization"] = np.random.uniform(0.9, 1.0, cpu_mask.sum())
+        df.loc[cpu_mask, "CPU Utilization"] = np.random.uniform(
+            0.9, 1.0, cpu_mask.sum()
+        )
         df.loc[cpu_mask, "Label"] = "cpu_load_anomaly"
-    
+
     # User peak anomalijos
     user_peak_mask = np.random.random(n) < 0.15
     if user_peak_mask.any():
-        df.loc[user_peak_mask, "Load[5m]"] *= np.random.uniform(1.5, 2.0, user_peak_mask.sum())
-        df.loc[user_peak_mask, "Load[1m]"] *= np.random.uniform(1.5, 2.0, user_peak_mask.sum())
-        df.loc[user_peak_mask, "Load[15m]"] *= np.random.uniform(1.5, 2.0, user_peak_mask.sum())
-        df.loc[user_peak_mask, "Transmit Total (Network I/O)"] *= np.random.uniform(1.5, 2.0, user_peak_mask.sum())
+        df.loc[user_peak_mask, "Load[5m]"] *= np.random.uniform(
+            1.5, 2.0, user_peak_mask.sum()
+        )
+        df.loc[user_peak_mask, "Load[1m]"] *= np.random.uniform(
+            1.5, 2.0, user_peak_mask.sum()
+        )
+        df.loc[user_peak_mask, "Load[15m]"] *= np.random.uniform(
+            1.5, 2.0, user_peak_mask.sum()
+        )
+        df.loc[user_peak_mask, "Transmit Total (Network I/O)"] *= np.random.uniform(
+            1.5, 2.0, user_peak_mask.sum()
+        )
         df.loc[user_peak_mask, "Label"] = "user_peak"
-    
+
     # Server unavailability anomalija
     unavailable_mask = np.random.random(n) < 0.08
     if unavailable_mask.any():
         cols_to_zero = [
-            "CPU Utilization", "Memory Utilization", "Load[5m]", "Load[1m]", "Load[15m]",
-            "Transmit Total (Network I/O)", "Receive Total (Network I/O)",
-            "Read (Disk I/O)", "Write (Disk I/O)"
+            "CPU Utilization",
+            "Memory Utilization",
+            "Load[5m]",
+            "Load[1m]",
+            "Load[15m]",
+            "Transmit Total (Network I/O)",
+            "Receive Total (Network I/O)",
+            "Read (Disk I/O)",
+            "Write (Disk I/O)",
         ]
         df.loc[unavailable_mask, cols_to_zero] = 0
         df.loc[unavailable_mask, "Label"] = "server_unavailability"
-    
+
     # Memory leak anomalija
     num_blocks = 100
     block_size = 10
@@ -150,10 +202,13 @@ def inject_random_anomalies(df):
         if n > block_size:
             start_idx = np.random.randint(0, n - block_size)
             leak_indices = range(start_idx, start_idx + block_size)
-            df.loc[leak_indices, "Memory Utilization"] = np.linspace(0.80, 0.98, block_size)
+            df.loc[leak_indices, "Memory Utilization"] = np.linspace(
+                0.80, 0.98, block_size
+            )
             df.loc[leak_indices, "Label"] = "memory_leak"
-    
+
     return df
+
 
 synthetic_df = inject_random_anomalies(synthetic_df)
 
@@ -177,7 +232,7 @@ rounding_dict = {
     "Transmit Errors (Network Traffic)": 0,
     "Receive Dropped (Network Traffic)": 0,
     "Transmit Dropped (Network Traffic)": 0,
-    "Transmit Total (Network Traffic)": 1
+    "Transmit Total (Network Traffic)": 1,
 }
 
 for col, decimals in rounding_dict.items():
