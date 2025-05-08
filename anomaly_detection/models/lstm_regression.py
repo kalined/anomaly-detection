@@ -45,11 +45,9 @@ class MetricsDataset(Dataset):
 
 
 class LSTMModel(nn.Module):
-    def __init__(self, input_size=18, hidden_size=128, output_size=18, num_layers=2):
+    def __init__(self, input_size=18, hidden_size=32, output_size=18, num_layers=1):
         super().__init__()
-        self.lstm = nn.LSTM(
-            input_size, hidden_size, num_layers, dropout=0.2, batch_first=True
-        )
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
         self.linear = nn.Linear(hidden_size, output_size)
 
     def forward(self, x):
@@ -121,6 +119,8 @@ def main():
     # Model, loss, optimizer
     device = mps_device
     model = LSTMModel(input_size=len(names)).to(device)
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Number of parameters: {total_params}")
     optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
     loss_fn = nn.MSELoss()
 
@@ -154,8 +154,8 @@ def main():
         loss_valid_history.append(valid_loss)
 
         print(
-            f"Epoch {epoch+1}/{epochs}"
-            "Train Loss: {train_loss:.4f}, Valid Loss: {valid_loss:.4f}"
+            f"Epoch {epoch+1}/{epochs} \
+            Train Loss: {train_loss:.4f}, Valid Loss: {valid_loss:.4f}"
         )
 
     # Evaluation
@@ -197,8 +197,6 @@ def main():
     print(f"\n=== First {N_print} samples: True and Predicted DF ===")
     print(df_true["CPU Utilization_true"].head(N_print))
     print(df_pred["CPU Utilization_pred"].head(N_print))
-
-    print(df_true_invers_scaling)
 
     # Plot all metrics
     plot_all_metrics(df_true_invers_scaling, df_pred_invers_scaling, names)
