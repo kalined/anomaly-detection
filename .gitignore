@@ -7,6 +7,11 @@ __pycache__/
 # Created models
 /models/
 
+/results/
+
+*.docx
+*.pptx
+
 # C extensions
 *.so
 
