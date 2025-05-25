@@ -1,13 +1,13 @@
 import joblib
 
-from anomaly_detection.models import ml_models
+from anomaly_detection.models import lstm_regression, ml_models
 
 
 def main():
     print("Starting the random forest module from main.py...")
     ml_models.main()
 
-    model = joblib.load("./models/random_forest_model.pkl")
+    model = joblib.load("./models/random_forest_best.pkl")
 
     sample = [
         [
@@ -32,7 +32,7 @@ def main():
         ]
     ]
 
-    scaler = joblib.load("./models/random_forest_scaler.pkl")
+    scaler = joblib.load("./models/scaler.pkl")
     sample_scaled = scaler.transform(sample)
 
     predicted_class = model.predict(sample_scaled)
@@ -46,6 +46,9 @@ def main():
     }
 
     print("Predicted label:", label_map[int(predicted_class[0])])
+
+    print("Starting the LSTM module from main.py...")
+    lstm_regression.main()
 
 
 if __name__ == "__main__":
